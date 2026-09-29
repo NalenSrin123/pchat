@@ -1,7 +1,24 @@
 <?php
-use App\Http\Controllers\{MessengerController,ProfileController}; use Illuminate\Support\Facades\Route; use Inertia\Inertia;
-Route::get('/', fn()=>auth()->check()?redirect()->route('dashboard'):Inertia::render('Welcome'))->name('home');
-Route::middleware('auth')->group(function(){
- Route::get('/messenger',[MessengerController::class,'index'])->name('dashboard'); Route::get('/messenger/users/search',[MessengerController::class,'users'])->name('messenger.users'); Route::get('/messenger/conversations',[MessengerController::class,'list']); Route::post('/messenger/conversations/private',[MessengerController::class,'private']); Route::get('/messenger/conversations/{conversation}/messages',[MessengerController::class,'messages']); Route::post('/messenger/conversations/{conversation}/messages',[MessengerController::class,'send']); Route::post('/messenger/conversations/{conversation}/read',[MessengerController::class,'read']); Route::post('/messenger/groups',[MessengerController::class,'group']); Route::put('/messenger/messages/{message}',[MessengerController::class,'update']); Route::delete('/messenger/messages/{message}',[MessengerController::class,'delete']); Route::post('/messenger/messages/{message}/reactions',[MessengerController::class,'react']); Route::get('/messenger/attachments/{message}',[MessengerController::class,'attachment'])->name('messenger.attachments.show');
- Route::get('/profile',[ProfileController::class,'edit'])->name('profile.edit'); Route::patch('/profile',[ProfileController::class,'update'])->name('profile.update'); Route::delete('/profile',[ProfileController::class,'destroy'])->name('profile.destroy');
-}); require __DIR__.'/auth.php';
+
+use App\Http\Controllers\{MessengerController, ProfileController};
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', fn() => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'))->name('home');
+Route::middleware('auth')->group(function () {
+    Route::get('/messenger', [MessengerController::class, 'index'])->name('dashboard');
+    Route::get('/messenger/users/search', [MessengerController::class, 'users'])->name('messenger.users');
+    Route::get('/messenger/conversations', [MessengerController::class, 'list']);
+    Route::post('/messenger/conversations/private', [MessengerController::class, 'private']);
+    Route::get('/messenger/conversations/{conversation}/messages', [MessengerController::class, 'messages']);
+    Route::post('/messenger/conversations/{conversation}/messages', [MessengerController::class, 'send']);
+    Route::post('/messenger/conversations/{conversation}/read', [MessengerController::class, 'read']);
+    Route::post('/messenger/groups', [MessengerController::class, 'group']);
+    Route::put('/messenger/messages/{message}', [MessengerController::class, 'update']);
+    Route::delete('/messenger/messages/{message}', [MessengerController::class, 'delete']);
+    Route::post('/messenger/messages/{message}/reactions', [MessengerController::class, 'react']);
+    Route::get('/messenger/attachments/{message}', [MessengerController::class, 'attachment'])->name('messenger.attachments.show');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+require __DIR__ . '/auth.php';

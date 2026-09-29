@@ -8,6 +8,7 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const form = useForm({
     name: '',
+    username: '',
     email: '',
     password: '',
     password_confirmation: '',
@@ -41,6 +42,21 @@ const submit = () => {
                 />
 
                 <InputError class="mt-2" :message="form.errors.name" />
+            </div>
+
+            <div class="mt-4">
+                <InputLabel for="username" value="Username" />
+
+                <TextInput
+                    id="username"
+                    type="text"
+                    class="mt-1 block w-full"
+                    v-model="form.username"
+                    required
+                    autocomplete="username"
+                />
+
+                <InputError class="mt-2" :message="form.errors.username" />
             </div>
 
             <div class="mt-4">
@@ -110,6 +126,19 @@ const submit = () => {
                     Register
                 </PrimaryButton>
             </div>
+
+            <div class="my-6 flex items-center gap-3 text-xs text-gray-400">
+                <span class="h-px flex-1 bg-gray-200" />
+                or continue with
+                <span class="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <a
+                :href="route('google.redirect')"
+                class="flex w-full items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+                Continue with Google
+            </a>
         </form>
     </GuestLayout>
 </template>

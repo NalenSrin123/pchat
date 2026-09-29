@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\EmailOtpController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -12,6 +14,10 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('auth/google', [GoogleAuthController::class, 'redirect'])->name('google.redirect');
+    Route::get('auth/google/callback', [GoogleAuthController::class, 'callback'])->name('google.callback');
+    Route::post('auth/otp/send', [EmailOtpController::class, 'send'])->middleware('throttle:3,1')->name('otp.send');
+    Route::post('auth/otp/verify', [EmailOtpController::class, 'verify'])->middleware('throttle:8,1')->name('otp.verify');
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 

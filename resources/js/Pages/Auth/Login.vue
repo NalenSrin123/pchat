@@ -93,6 +93,19 @@ const submit = () => {
                     Log in
                 </PrimaryButton>
             </div>
+
+            <div class="my-6 flex items-center gap-3 text-xs text-gray-400">
+                <span class="h-px flex-1 bg-gray-200" />
+                or continue with
+                <span class="h-px flex-1 bg-gray-200" />
+            </div>
+
+            <a
+                :href="route('google.redirect')"
+                class="flex w-full items-center justify-center rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            >
+                Continue with Google
+            </a>
         </form>
     </GuestLayout>
 </template>
