@@ -42,6 +42,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['avatar_url'];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -58,5 +60,5 @@ class User extends Authenticatable
     public function conversationMemberships(): HasMany { return $this->hasMany(ConversationMember::class); }
     public function conversations(): BelongsToMany { return $this->belongsToMany(Conversation::class, 'conversation_members')->withPivot(['role', 'joined_at', 'last_read_message_id'])->withTimestamps(); }
     public function messages(): HasMany { return $this->hasMany(Message::class, 'sender_id'); }
-    public function getAvatarUrlAttribute(): ?string { return $this->avatar ? \Storage::disk('public')->url($this->avatar) : null; }
+    public function getAvatarUrlAttribute(): ?string { return $this->avatar ? "/storage/" . ltrim($this->avatar, "/") : null; }
 }

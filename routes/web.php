@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn() => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'))->name('home');
 Route::middleware('auth')->group(function () {
     Route::get('/messenger', [MessengerController::class, 'index'])->name('dashboard');
+    Route::post('/messenger/presence', [MessengerController::class, 'presence']);
     Route::get('/messenger/users/search', [MessengerController::class, 'users'])->name('messenger.users');
     Route::get('/messenger/conversations', [MessengerController::class, 'list']);
     Route::post('/messenger/conversations/private', [MessengerController::class, 'private']);

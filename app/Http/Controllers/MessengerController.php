@@ -13,8 +13,23 @@ class MessengerController extends Controller
 {
     public function index(Request $request)
     {
-        return Inertia::render('Messenger/Index', ['conversations' => $this->conversations($request->user()), 'currentUser' => $this->userData($request->user())]);
+        $user = $request->user();
+        $user->forceFill(["last_seen_at" => now()])->save();
+
+        return Inertia::render("Messenger/Index", [
+            "conversations" => $this->conversations($user),
+            "currentUser" => $this->userData($user),
+        ]);
     }
+
+    public function presence(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->forceFill(["last_seen_at" => now()])->save();
+
+        return response()->json(["data" => $this->conversations($user->fresh())]);
+    }
+
     public function users(Request $request): JsonResponse
     {
         $q = trim((string)$request->query('q'));
@@ -47,13 +62,13 @@ class MessengerController extends Controller
     public function send(Request $request, Conversation $conversation): JsonResponse
     {
         $this->member($conversation, $request->user());
-        $data = $request->validate(['message' => 'nullable|string|max:5000', 'reply_to_id' => ['nullable', 'integer', Rule::exists('messages', 'id')], 'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,txt']);
+        $data = $request->validate(['message' => 'nullable|string|max:5000', 'reply_to_id' => ['nullable', 'integer', Rule::exists('messages', 'id')], 'attachment' => 'nullable|file|max:20480|mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,txt']);
         if (blank($data['message'] ?? null) && !$request->hasFile('attachment')) abort(422, 'A message or attachment is required.');
         if (isset($data['reply_to_id']) && !$conversation->messages()->whereKey($data['reply_to_id'])->exists()) abort(422, 'Reply must be in this conversation.');
         $payload = ['sender_id' => $request->user()->id, 'message' => filled($data['message'] ?? null) ? trim($data['message']) : null, 'reply_to_id' => $data['reply_to_id'] ?? null, 'type' => 'text'];
         if ($file = $request->file('attachment')) {
             $isImage = str_starts_with($file->getMimeType(), 'image/');
-            $payload += ['type' => $isImage ? 'image' : 'file', 'file_path' => $file->store($isImage ? 'chat-images' : 'chat-files', 'local'), 'file_name' => $file->getClientOriginalName(), 'file_size' => $file->getSize(), 'file_mime_type' => $file->getMimeType()];
+            $payload = array_merge($payload, ['type' => $isImage ? 'image' : 'file', 'file_path' => $file->store($isImage ? 'chat-images' : 'chat-files', 'local'), 'file_name' => $file->getClientOriginalName(), 'file_size' => $file->getSize(), 'file_mime_type' => $file->getMimeType()]);
         }
         $message = DB::transaction(function () use ($conversation, $payload) {
             $m = $conversation->messages()->create($payload);
@@ -102,7 +117,15 @@ class MessengerController extends Controller
     {
         $this->member($message->conversation, $request->user());
         abort_unless($message->file_path, 404);
-        return Storage::disk('local')->download($message->file_path, $message->file_name);
+         $disk = Storage::disk("local");
+
+        if ($message->type === "image") {
+            return response()->file($disk->path($message->file_path), [
+                "Content-Type" => $message->file_mime_type ?? "image/*",
+            ]);
+        }
+
+        return $disk->download($message->file_path, $message->file_name);
     }
     public function react(Request $request, Message $message): JsonResponse
     {
