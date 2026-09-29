@@ -220,24 +220,48 @@ function fit() {
 const scrollDown = (smooth = false) => nextTick(() => chat.value?.scrollTo({ top: chat.value.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }));
 
 const listeningIds = new Set<number>();
+const sameId = (left: number | string | null | undefined, right: number | string | null | undefined) =>
+    left != null && right != null && String(left) === String(right);
+const orderMessages = (items: Message[]) => [...items].sort((left, right) => {
+    const byCreatedAt = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+    return byCreatedAt || Number(left.id) - Number(right.id);
+});
+const mergeMessages = (...groups: Message[][]) => orderMessages(groups.flat().filter((message, index, all) =>
+    all.findIndex(candidate => sameId(candidate.id, message.id)) === index,
+));
+
 function subscribe(c: Conversation) {
     if (listeningIds.has(c.id)) return;
     listeningIds.add(c.id);
-    echo().private('conversation.' + c.id).listen('.message.sent', (event: { message: Message }) => {
-        if (event.message.sender_id !== props.currentUser.id) {
+    echo().private('conversation.' + c.id).listen('.message.sent', (event: { message?: Message } | Message) => {
+        // MessageSent::broadcastWith() currently wraps the payload in { message: ... }.
+        // Keep the fallback while logging so a payload-shape change is immediately visible.
+        const message = ('message' in event && typeof event.message === 'object' && event.message?.id ? event.message : event) as Message;
+        const conversation = conversations.value.find(item => sameId(item.id, message.conversation_id)) ?? c;
+        const isActiveConversation = sameId(active.value?.id, message.conversation_id);
+
+        console.debug('[Messenger] message.sent received', {
+            event,
+            currentConversationId: active.value?.id,
+            messageConversationId: message.conversation_id,
+            isActiveConversation,
+        });
+
+        if (!message?.id || !sameId(conversation.id, message.conversation_id)) return;
+
+        conversation.last_message = message;
+        if (isActiveConversation) {
+            messages.value = mergeMessages(messages.value, [message]);
+            conversation.unread_count = 0;
+            axios.post(`/messenger/conversations/${conversation.id}/read`, { message_id: message.id });
+            scrollDown(true);
+        } else if (!sameId(message.sender_id, props.currentUser.id)) {
             playNotificationSound();
-            c.last_message = event.message;
-            if (active.value?.id === c.id) {
-                if (!messages.value.some(m => m.id === event.message.id)) messages.value.push(event.message);
-                axios.post(`/messenger/conversations/${c.id}/read`, { message_id: event.message.id });
-                scrollDown(true);
-            } else {
-                c.unread_count++;
-                notify(c, event.message);
-            }
+            conversation.unread_count++;
+            notify(conversation, message);
         }
     }).listen('.message.read', (event: ReadReceipt) => {
-        if (active.value?.id !== c.id) return;
+        if (!sameId(active.value?.id, c.id)) return;
         const index = readReceipts.value.findIndex(receipt => receipt.user_id === event.user_id);
         if (index < 0) readReceipts.value.push(event);
         else if ((event.message_id ?? 0) > (readReceipts.value[index].message_id ?? 0)) readReceipts.value[index] = event;
@@ -252,7 +276,9 @@ async function open(c: Conversation) {
     loading.value = true;
     try {
         const { data } = await axios.get(`/messenger/conversations/${c.id}/messages`);
-        messages.value = data.data;
+        // An Echo event may arrive while this request is pending. Merge instead of
+        // replacing so the realtime message is not lost when the request resolves.
+        messages.value = mergeMessages(messages.value, data.data);
         c.unread_count = 0;
         readReceipts.value = data.read_receipts;
         await axios.post(`/messenger/conversations/${c.id}/read`, { message_id: messages.value.at(-1)?.id });
