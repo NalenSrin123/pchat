@@ -32,7 +32,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         $data = $request->validated();
-        unset($data["avatar"]);
+        unset($data["avatar"], $data["cover_photo"]);
 
         $user->fill($data);
 
@@ -46,6 +46,11 @@ class ProfileController extends Controller
             if ($oldAvatar) {
                 Storage::disk("public")->delete($oldAvatar);
             }
+        }
+        if ($request->hasFile('cover_photo')) {
+            $oldCover = $user->cover_photo;
+            $user->cover_photo = $request->file('cover_photo')->store('cover-photos', 'public');
+            if ($oldCover) Storage::disk('public')->delete($oldCover);
         }
 
         $user->save();

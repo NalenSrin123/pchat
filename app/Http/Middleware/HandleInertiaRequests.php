@@ -34,6 +34,10 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'seo' => [
+                'siteUrl' => config('seo.site_url'),
+                'socialImage' => config('seo.social_image'),
+            ],
         ];
     }
 }

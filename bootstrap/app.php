@@ -16,8 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
-
-        //
+        $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class, 'account.active' => \App\Http\Middleware\EnsureAccountActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -4,6 +4,10 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        @unless (request()->is('/') || request()->is('about') || request()->is('features') || request()->is('privacy') || request()->is('terms'))
+            <meta name="robots" content="noindex, nofollow">
+        @endunless
+
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->

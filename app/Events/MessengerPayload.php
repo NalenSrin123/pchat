@@ -19,6 +19,7 @@ class MessengerPayload
             'file_name' => $message->file_name,
             'file_size' => $message->file_size,
             'file_mime_type' => $message->file_mime_type,
+            'audio_duration' => $message->audio_duration,
                 // use a relative URL to avoid cross-origin/auth issues when APP_URL/port differs
                 'file_url' => $message->file_path ? ('/messenger/attachments/' . $message->id) : null,
             'created_at' => $message->created_at?->toISOString(),

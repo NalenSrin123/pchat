@@ -1,0 +1,12 @@
+<?php
+namespace Tests\Feature\Admin;
+use App\Models\{Conversation, Message, MessageReport, User}; use Illuminate\Foundation\Testing\RefreshDatabase; use Tests\TestCase;
+class AdminAuthorizationTest extends TestCase
+{
+    use RefreshDatabase;
+    public function test_a_normal_user_cannot_access_admin(): void { $this->actingAs(User::factory()->create())->get('/admin/dashboard')->assertForbidden(); }
+    public function test_an_admin_can_access_dashboard(): void { $admin=User::factory()->create(['role'=>'admin']); $this->actingAs($admin)->get('/admin/dashboard')->assertOk(); }
+    public function test_a_suspended_user_cannot_use_messenger(): void { $user=User::factory()->create(['status'=>'suspended','suspended_until'=>now()->addDay()]); $this->actingAs($user)->get('/messenger')->assertForbidden(); }
+    public function test_a_member_can_report_a_message_but_an_outsider_cannot(): void { $sender=User::factory()->create(); $member=User::factory()->create(); $outsider=User::factory()->create(); $conversation=Conversation::create(['type'=>'private','created_by'=>$sender->id]); $conversation->memberships()->createMany([['user_id'=>$sender->id],['user_id'=>$member->id]]); $message=$conversation->messages()->create(['sender_id'=>$sender->id,'message'=>'test']); $this->actingAs($member)->postJson("/messenger/messages/{$message->id}/reports",['reason'=>'spam'])->assertCreated(); $this->assertDatabaseHas('message_reports',['message_id'=>$message->id,'reported_by'=>$member->id]); $this->actingAs($outsider)->postJson("/messenger/messages/{$message->id}/reports",['reason'=>'spam'])->assertForbidden(); }
+    public function test_admin_removing_a_reported_message_creates_audit_log(): void { $admin=User::factory()->create(['role'=>'admin']); $sender=User::factory()->create(); $conversation=Conversation::create(['type'=>'private','created_by'=>$sender->id]); $conversation->memberships()->create(['user_id'=>$sender->id]); $message=$conversation->messages()->create(['sender_id'=>$sender->id,'message'=>'bad']); $report=MessageReport::create(['message_id'=>$message->id,'reported_by'=>$sender->id,'reason'=>'spam']); $this->actingAs($admin)->post("/admin/reports/{$report->id}/resolve",['action'=>'remove_message','reason'=>'Moderation'])->assertRedirect('/admin/reports'); $this->assertSoftDeleted('messages',['id'=>$message->id]); $this->assertDatabaseHas('admin_audit_logs',['admin_id'=>$admin->id,'action'=>'MESSAGE_REMOVED']); }
+}
