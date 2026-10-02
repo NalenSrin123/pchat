@@ -8,7 +8,7 @@ class MessengerPayload
 {
     public static function message(Message $message): array
     {
-        $message->loadMissing(['sender:id,name,username,email,avatar', 'replyTo.sender:id,name', 'reactions']);
+        $message->loadMissing(['sender:id,name,username,email,avatar', 'replyTo.sender:id,name', 'reactions', 'story.user:id,name,username,avatar']);
 
         return [
             'id' => $message->id,
@@ -20,8 +20,8 @@ class MessengerPayload
             'file_size' => $message->file_size,
             'file_mime_type' => $message->file_mime_type,
             'audio_duration' => $message->audio_duration,
-                // use a relative URL to avoid cross-origin/auth issues when APP_URL/port differs
-                'file_url' => $message->file_path ? ('/messenger/attachments/' . $message->id) : null,
+            // use a relative URL to avoid cross-origin/auth issues when APP_URL/port differs
+            'file_url' => $message->file_path ? ('/messenger/attachments/'.$message->id) : null,
             'created_at' => $message->created_at?->toISOString(),
             'edited_at' => $message->edited_at?->toISOString(),
             'deleted_at' => $message->deleted_at?->toISOString(),
@@ -37,6 +37,7 @@ class MessengerPayload
                 'message' => $message->replyTo->message,
                 'sender' => $message->replyTo->sender?->name,
             ] : null,
+            'story' => $message->story ? ['id' => $message->story->id, 'content' => $message->story->content, 'author' => $message->story->user?->name] : null,
             'reactions' => $message->reactions
                 ->map(fn ($reaction) => ['emoji' => $reaction->emoji, 'user_id' => $reaction->user_id])
                 ->values(),

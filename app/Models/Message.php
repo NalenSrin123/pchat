@@ -1,3 +1,55 @@
 <?php
-namespace App\Models; use Illuminate\Database\Eloquent\Model; use Illuminate\Database\Eloquent\SoftDeletes; use Illuminate\Database\Eloquent\Relations\{BelongsTo,HasMany};
-class Message extends Model { use SoftDeletes; protected $fillable=['conversation_id','sender_id','message','type','file_path','file_name','file_size','file_mime_type','audio_duration','reply_to_id','edited_at','deleted_by','deletion_reason']; protected function casts():array{return ['edited_at'=>'datetime'];} public function conversation():BelongsTo{return $this->belongsTo(Conversation::class);} public function sender():BelongsTo{return $this->belongsTo(User::class,'sender_id');} public function deletedBy():BelongsTo{return $this->belongsTo(User::class,'deleted_by');} public function replyTo():BelongsTo{return $this->belongsTo(self::class,'reply_to_id')->withTrashed();} public function replies():HasMany{return $this->hasMany(self::class,'reply_to_id');} public function reactions():HasMany{return $this->hasMany(MessageReaction::class);} }
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Message extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = ['conversation_id', 'sender_id', 'message', 'type', 'file_path', 'file_name', 'file_size', 'file_mime_type', 'audio_duration', 'reply_to_id', 'story_id', 'edited_at', 'deleted_by', 'deletion_reason'];
+
+    protected function casts(): array
+    {
+        return ['edited_at' => 'datetime'];
+    }
+
+    public function conversation(): BelongsTo
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function story(): BelongsTo
+    {
+        return $this->belongsTo(Story::class);
+    }
+
+    public function deletedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function replyTo(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reply_to_id')->withTrashed();
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(self::class, 'reply_to_id');
+    }
+
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(MessageReaction::class);
+    }
+}

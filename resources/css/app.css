@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    :root {
+        --pchat-brand: #0f766e;
+        --pchat-brand-rgb: 15 118 110;
+    }
+}
